@@ -4,18 +4,17 @@ import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class GettingListOfOrdersTest {
 
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
     private static final String ORDER_LIST = "/api/v1/orders";
 
-    @BeforeAll
+    @BeforeClass
     public static void setup() {
         RestAssured.baseURI = BASE_URL;
     }

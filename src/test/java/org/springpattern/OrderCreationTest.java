@@ -1,23 +1,31 @@
+
 package org.springpattern;
 
 import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertEquals;
 
+@RunWith(Parameterized.class)
 public class OrderCreationTest {
 
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru/api/v1/orders";
 
+    @Parameterized.Parameter(0)
+    public String[] colors;
 
+    @Parameterized.Parameter(1)
+    public int expectedStatusCode;
 
-    private static Object[][] orderData() {
+    @Parameterized.Parameters(name = "{index}: createOrderTest(colors={0}, expectedStatusCode={1})")
+    public static Object[][] orderData() {
         return new Object[][]{
                 {new String[]{"BLACK"}, 201},
                 {new String[]{"GREY"}, 201},
@@ -26,11 +34,10 @@ public class OrderCreationTest {
         };
     }
 
-    @ParameterizedTest
-    @MethodSource("orderData")
+    @Test
     @Description("Создание заказа с различными цветами и проверка кода статуса.")
     @DisplayName("Создание заказа с различными цветами")
-    public void createOrderTest(String[] colors, int expectedStatusCode) {
+    public void createOrderTest() {
         String orderJson = String.format(
                 "{ \"firstName\": \"Иван\", " +
                         "\"lastName\": \"Иванов\", " +
@@ -50,9 +57,7 @@ public class OrderCreationTest {
                 .when()
                 .post(BASE_URL);
 
-
         assertEquals(expectedStatusCode, response.getStatusCode());
-
 
         if (expectedStatusCode == 201) {
             response.then().body("track", notNullValue());
