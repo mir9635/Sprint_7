@@ -1,22 +1,20 @@
 
 package org.springpattern;
 
+import api.orders.Order;
+import api.orders.OrdersClient;
 import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class OrderCreationTest {
-
-    private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru/api/v1/orders";
 
     @Parameterized.Parameter(0)
     public String[] colors;
@@ -38,24 +36,8 @@ public class OrderCreationTest {
     @Description("Создание заказа с различными цветами и проверка кода статуса.")
     @DisplayName("Создание заказа с различными цветами")
     public void createOrderTest() {
-        String orderJson = String.format(
-                "{ \"firstName\": \"Иван\", " +
-                        "\"lastName\": \"Иванов\", " +
-                        "\"address\": \"Москва, 142\", " +
-                        "\"metroStation\": 4, " +
-                        "\"phone\": \"+7 800 355 35 35\", " +
-                        "\"rentTime\": 5, " +
-                        "\"deliveryDate\": \"2020-06-06\", " +
-                        "\"comment\": \"Текст\", " +
-                        "\"color\": %s }",
-                colors.length > 0 ? String.format("[\"%s\"]", String.join("\", \"", colors)) : "[]"
-        );
-
-        Response response = given()
-                .contentType(ContentType.JSON)
-                .body(orderJson)
-                .when()
-                .post(BASE_URL);
+        OrdersClient ordersClient = new OrdersClient();
+        Response response = ordersClient.getCreateOrder(new Order("Иван", "Иванов", "Москва, 142", "4", "+7 800 355 35 35", 5, "2020-06-06", "Текст", colors));
 
         assertEquals(expectedStatusCode, response.getStatusCode());
 

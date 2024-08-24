@@ -1,56 +1,29 @@
 package org.springpattern;
 
+import api.courier.Courier;
+import api.courier.CreatingCourier;
 import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import org.junit.BeforeClass;
+import io.restassured.response.Response;
 import org.junit.*;
 
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
 
-import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
 
-public class CreatingCourierTest {
-    private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
-    private static final String CREATING_COURIER = "/api/v1/courier";
-
-    private static Set<String> usedLogins = new HashSet<>();
-    private static Random random = new Random();
-
-    @BeforeClass
-    public static void setup() {
-        RestAssured.baseURI = BASE_URL;
-    }
-
-    private String generateUniqueLogin() {
-        String login;
-        do {
-            login = "user" + random.nextInt(10000);
-        } while (usedLogins.contains(login));
-        usedLogins.add(login);
-        return login;
-    }
+public class CreatingCourierTest extends BaseTest {
 
     @Test
     @Description("Проверка, что курьера можно создать")
     @DisplayName("Успешное создание курьера")
     public void testCreateCourier() {
-        String login = generateUniqueLogin();
+        CreatingCourier create = new CreatingCourier();
+
+        String login = create.generateUniqueLogin();
         String password = "1234";
 
-        given()
-                .contentType(ContentType.JSON)
-                .body("{ \"login\": \"" + login + "\", \"password\": \"" + password + "\", \"firstName\": \"saske\" }")
-                .when()
-                .post(CREATING_COURIER)
-                .then()
-                .statusCode(anyOf(is(201)))
-                .body("ok", equalTo(true));
+        Response createCourier = create.createCourier(new Courier(login, password, "saske"));
+        createCourier.then().statusCode(201).body("ok", equalTo(true));
     }
 
     @Test
@@ -59,70 +32,48 @@ public class CreatingCourierTest {
     public void testCreateCourierWithoutLogin() {
         String password = "1234";
 
-        given()
-                .contentType(ContentType.JSON)
-                .body("{ \"password\": \"" + password + "\", \"firstName\": \"saske\" }")
-                .when()
-                .post(CREATING_COURIER)
-                .then()
-                .statusCode(400)
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
+        CreatingCourier create = new CreatingCourier();
+        Response duringCourierCreationWithoutLogin = create.getErrorDuringCourierCreationWithoutLogin(new Courier("", password, "saske"));
+        duringCourierCreationWithoutLogin.then().statusCode(400).body("message", equalTo("Недостаточно данных для создания учетной записи"));
     }
 
     @Test
     @Description("Проверка, что при отсутствии пароля возвращается ошибка")
     @DisplayName("Ошибка при создании курьера без пароля")
     public void testCreateCourierWithoutPassword() {
-        String login = generateUniqueLogin();
+        CreatingCourier create = new CreatingCourier();
 
-        given()
-                .contentType(ContentType.JSON)
-                .body("{ \"login\": \"" + login + "\", \"firstName\": \"saske\" }")
-                .when()
-                .post(CREATING_COURIER)
-                .then()
-                .statusCode(400)
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
+        String login = create.generateUniqueLogin();
+
+        Response duringCourierCreationWithoutLogin = create.getErrorDuringCourierCreationWithoutPassword(new Courier(login, "", "saske"));
+        duringCourierCreationWithoutLogin.then().statusCode(400).body("message", equalTo("Недостаточно данных для создания учетной записи"));
+
     }
 
     @Test
     @Description("Проверка, что при попытке создания курьера с уже существующим логином возвращается ошибка")
     @DisplayName("Ошибка при создании курьера с дубликатом логина")
     public void testCreateCourierWithDuplicateLogin() {
-        String login = generateUniqueLogin();
+        CreatingCourier create = new CreatingCourier();
+
+        String login = create.generateUniqueLogin();
         String password = "1234";
 
-        // Сначала создаем курьера
-        given()
-                .contentType(ContentType.JSON)
-                .body("{ \"login\": \"" + login + "\", \"password\": \"" + password + "\", \"firstName\": \"saske\" }")
-                .when()
-                .post(CREATING_COURIER)
-                .then()
-                .statusCode(anyOf(is(201)));
+        Response createFirstCourier = create.createCourier(new Courier(login, password, "saske"));
+        createFirstCourier.then().statusCode(201).body("ok", equalTo(true));
 
-        // Повторно пытаемся создать курьера с тем же логином
-        given()
-                .contentType(ContentType.JSON)
+        Response createSecondCourier = create.createCourier(new Courier(login, password, "saske"));
+        createSecondCourier.then().statusCode(409).body("message", equalTo("Этот логин уже используется. Попробуйте другой."));
 
-                .body("{ \"login\": \"" + login + "\", \"password\": \"" + password + "\", \"firstName\": \"saske\" }")
-                .when()
-                .post(CREATING_COURIER)
-                .then()
-                .statusCode(409)
-                .body("message", equalTo("Этот логин уже используется. Попробуйте другой."));
     }
 
     @Test
     @Description("Проверка, что при отсутствии всех данных возвращается ошибка")
     @DisplayName("Создание курьера без данных")
     public void testCreateCourierWithoutAnyData() {
-        given()
-                .contentType(ContentType.JSON)
-                .when()
-                .post(CREATING_COURIER)
-                .then()
-                .statusCode(400)
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
+
+        CreatingCourier create = new CreatingCourier();
+        Response duringCourierCreationWithoutData = create.getErrorDuringCourierCreationWithoutData();
+        duringCourierCreationWithoutData.then().statusCode(400).body("message", equalTo("Недостаточно данных для создания учетной записи"));
     }
 }
